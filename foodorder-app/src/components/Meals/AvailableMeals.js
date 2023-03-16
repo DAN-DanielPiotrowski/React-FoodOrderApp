@@ -1,37 +1,44 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Card from "../UI/Card";
 import classes from "./AvailableMeals.module.css";
 import MealItem from "./MealItem/MealItem";
 import CartContext from "./../../store/cart-context";
 
-const DUMMY_MEALS = [
-  {
-    id: "m1",
-    name: "Sushi",
-    description: "Finest fish and veggies",
-    price: 22.99,
-  },
-  {
-    id: "m2",
-    name: "Schnitzel",
-    description: "A german specialty!",
-    price: 16.5,
-  },
-  {
-    id: "m3",
-    name: "Barbecue Burger",
-    description: "American, raw, meaty",
-    price: 12.99,
-  },
-  {
-    id: "m4",
-    name: "Green Bowl",
-    description: "Healthy...and green...",
-    price: 18.99,
-  },
-];
-
 export default function AvailableMeals() {
+  const [mealItems, setMealItems] = useState([]);
+  const [isError, setIsError] = useState(false);
+  useEffect(() => {
+    const fetchMeals = async () => {
+      try {
+        const response = await fetch(
+          "https://reactapp-68e8e-default-rtdb.firebaseio.com/Meals.json"
+        );
+
+        if (!response.ok) {
+          throw new Error("Something went wrong");
+        }
+
+        const responseData = await response.json();
+        const loadedMeals = [];
+
+        for (const key in responseData) {
+          loadedMeals.push({
+            id: responseData[key].id,
+            name: responseData[key].name,
+            description: responseData[key].description,
+            price: responseData[key].price,
+          });
+        }
+
+        setMealItems(loadedMeals);
+      } catch (error) {
+        setIsError(true);
+      }
+    };
+
+    fetchMeals();
+  }, []);
+
   const ctx = useContext(CartContext);
 
   const addItemHandler = (item, amount) => {
@@ -47,11 +54,19 @@ export default function AvailableMeals() {
     <section className={classes.meals}>
       <Card>
         <ul>
-          {DUMMY_MEALS.map((meal) => {
-            return (
-              <MealItem key={meal.id} meal={meal} addItem={addItemHandler} />
-            );
-          })}
+          {mealItems.length > 0 ? (
+            mealItems.map((meal) => {
+              return (
+                <MealItem key={meal.id} meal={meal} addItem={addItemHandler} />
+              );
+            })
+          ) : isError ? (
+            <p style={{ textAlign: "center", color: "red" }}>
+              Something went wrong.
+            </p>
+          ) : (
+            <p style={{ textAlign: "center" }}>Loading...</p>
+          )}
         </ul>
       </Card>
     </section>
